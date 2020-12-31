@@ -9,7 +9,7 @@ My name is Sean Modd. I have the following qualities:
 - I rock a great mustache
 - I'm extremely loyal to my family
 
-What else do you need?
+What else do you need bro?
 
 ### My story
 
