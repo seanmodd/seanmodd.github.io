@@ -16,6 +16,7 @@
   const nav = document.getElementById("phase-nav");
   const phaseList = document.getElementById("phase-list");
   const rulesGrid = document.getElementById("rules-grid");
+  const reusablePromptList = document.getElementById("reusable-prompt-list");
   const completionGrid = document.getElementById("completion-grid");
   const steadyLoop = document.getElementById("steady-loop");
   const progressLabel = document.getElementById("progress-label");
@@ -91,6 +92,10 @@
     return `${guide.universalPreamble}\n\nPHASE-SPECIFIC INSTRUCTIONS\n${prompt.body}`;
   }
 
+  function completeReusablePrompt(prompt) {
+    return `${guide.universalPreamble}\n\nREUSABLE CONTROL PROMPT\n${prompt.prompt}`;
+  }
+
   function renderRules() {
     guide.rules.forEach((rule, index) => {
       const card = element("article", "rule-card");
@@ -98,6 +103,31 @@
       card.append(element("h3", "", rule.title));
       card.append(element("p", "", rule.body));
       rulesGrid.append(card);
+    });
+  }
+
+  function renderReusablePrompts() {
+    guide.reusablePrompts.forEach((prompt, index) => {
+      const card = element("section", "prompt-card");
+      const header = element("div", "prompt-header");
+      const titleWrap = element("div", "prompt-header__copy");
+      titleWrap.append(element("span", "", prompt.title));
+      if (prompt.description) titleWrap.append(element("p", "prompt-description", prompt.description));
+      header.append(titleWrap);
+
+      const copyButton = element("button", "prompt-copy", "Copy exact prompt");
+      copyButton.type = "button";
+      copyButton.setAttribute("aria-label", `Copy reusable prompt: ${prompt.title}`);
+      copyButton.addEventListener("click", () => {
+        copyText(completeReusablePrompt(prompt), `${prompt.title} copied`);
+      });
+      header.append(copyButton);
+
+      const code = element("pre", "prompt-code");
+      code.id = `reusable-prompt-${index}`;
+      code.append(element("code", "", completeReusablePrompt(prompt)));
+      card.append(header, code);
+      reusablePromptList.append(card);
     });
   }
 
@@ -341,6 +371,13 @@
       });
     });
 
+    lines.push("# Reusable control prompts", "");
+    guide.reusablePrompts.forEach((prompt) => {
+      lines.push(`## ${prompt.title}`, "");
+      if (prompt.description) lines.push(prompt.description, "");
+      lines.push("````text", completeReusablePrompt(prompt), "````", "");
+    });
+
     const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const download = element("a");
@@ -395,13 +432,16 @@
       phases.length !== expectedPhaseCount ||
       ids.size !== phases.length ||
       numbers.size !== phases.length ||
-      invalid.length > 0
+      invalid.length > 0 ||
+      !Array.isArray(guide.reusablePrompts) ||
+      guide.reusablePrompts.length === 0
     ) {
       console.error("Migration guide phase data failed validation", {
         expectedPhaseCount,
         actualPhaseCount: phases.length,
         duplicateIds: ids.size !== phases.length,
         duplicateNumbers: numbers.size !== phases.length,
+        reusablePrompts: guide.reusablePrompts?.length ?? 0,
         invalid
       });
       showToast("Guide data warning: phase validation failed");
@@ -409,6 +449,7 @@
   }
 
   renderRules();
+  renderReusablePrompts();
   renderCompletion();
   renderSteadyState();
   renderNavigation();
