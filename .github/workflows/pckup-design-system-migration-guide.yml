@@ -1,0 +1,29 @@
+name: Validate Pckup design-system migration guide
+
+on:
+  pull_request:
+    paths:
+      - "pckup-design-system-migration-guide/**"
+      - ".github/workflows/pckup-design-system-migration-guide.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "pckup-design-system-migration-guide/**"
+      - ".github/workflows/pckup-design-system-migration-guide.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate static guide
+        run: node pckup-design-system-migration-guide/validate.mjs
