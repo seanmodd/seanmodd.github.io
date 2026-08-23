@@ -22,10 +22,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Check JavaScript syntax
         run: |
           node --check pckup-design-system-migration-guide/guide-meta.js
+          node --check pckup-design-system-migration-guide/guide-adapter.js
           node --check pckup-design-system-migration-guide/phases-00-04.js
           node --check pckup-design-system-migration-guide/phases-05-08.js
           node --check pckup-design-system-migration-guide/phases-09-12.js
@@ -35,6 +36,7 @@ jobs:
           node <<'NODE'
           global.window = {};
           require('./pckup-design-system-migration-guide/guide-meta.js');
+          require('./pckup-design-system-migration-guide/guide-adapter.js');
           require('./pckup-design-system-migration-guide/phases-00-04.js');
           require('./pckup-design-system-migration-guide/phases-05-08.js');
           require('./pckup-design-system-migration-guide/phases-09-12.js');
@@ -72,11 +74,20 @@ jobs:
 
           if (guide.repository !== 'senpex/pckup-web-app') throw new Error('Unexpected repository');
           if (guide.figmaFileKey !== 'X7WZQGMUPIuzeaNoA7zTrF') throw new Error('Unexpected Figma file');
+          if (!Array.isArray(guide.reusablePrompts) || guide.reusablePrompts.length < 4) {
+            throw new Error('Reusable control prompts did not load');
+          }
+          guide.reusablePrompts.forEach((prompt) => {
+            if (!prompt.id || !prompt.title || typeof prompt.prompt !== 'string' || prompt.prompt.length < 300) {
+              throw new Error(`Invalid reusable prompt ${prompt.id ?? 'unknown'}`);
+            }
+          });
 
           console.log(JSON.stringify({
             status: 'valid',
             phases: phases.length,
             prompts: phases.reduce((total, phase) => total + phase.prompts.length, 0),
+            reusablePrompts: guide.reusablePrompts.length,
             rules: guide.rules.length,
             completionCriteria: guide.completion.length,
             steadyStateSteps: guide.steadyState.length,
