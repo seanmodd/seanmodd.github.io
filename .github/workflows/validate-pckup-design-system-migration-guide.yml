@@ -22,74 +22,97 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "22"
       - name: Check JavaScript syntax
         run: |
-          node --check pckup-design-system-migration-guide/guide-meta.js
-          node --check pckup-design-system-migration-guide/guide-adapter.js
-          node --check pckup-design-system-migration-guide/phases-00-04.js
-          node --check pckup-design-system-migration-guide/phases-05-08.js
-          node --check pckup-design-system-migration-guide/phases-09-12.js
-          node --check pckup-design-system-migration-guide/app.js
-      - name: Validate guide data
+          node --check pckup-design-system-migration-guide/phase-data-1.js
+          node --check pckup-design-system-migration-guide/phase-data-2.js
+          node --check pckup-design-system-migration-guide/phase-data-3.js
+          node --check pckup-design-system-migration-guide/site.js
+      - name: Validate phase payload and public assets
         run: |
           node <<'NODE'
-          global.window = {};
-          require('./pckup-design-system-migration-guide/guide-meta.js');
-          require('./pckup-design-system-migration-guide/guide-adapter.js');
-          require('./pckup-design-system-migration-guide/phases-00-04.js');
-          require('./pckup-design-system-migration-guide/phases-05-08.js');
-          require('./pckup-design-system-migration-guide/phases-09-12.js');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const zlib = require('node:zlib');
 
-          const guide = global.window.PCKUP_GUIDE;
-          const phases = global.window.PCKUP_PHASES;
-          const expected = Array.from({ length: 13 }, (_, index) => String(index).padStart(2, '0'));
+          const root = 'pckup-design-system-migration-guide';
+          const partFiles = ['phase-data-1.js', 'phase-data-2.js', 'phase-data-3.js'];
+          const encoded = partFiles.map((file) => {
+            const source = fs.readFileSync(path.join(root, file), 'utf8');
+            const match = source.match(/'([^']*)'/);
+            if (!match) throw new Error(`Missing compressed payload in ${file}`);
+            return match[1];
+          }).join('');
 
-          if (!guide) throw new Error('Guide metadata did not load');
-          if (!Array.isArray(phases) || phases.length !== 13) {
-            throw new Error(`Expected 13 phases, found ${phases?.length ?? 0}`);
-          }
-          if (new Set(phases.map((phase) => phase.id)).size !== phases.length) {
-            throw new Error('Duplicate phase IDs');
-          }
-          if (new Set(phases.map((phase) => phase.number)).size !== phases.length) {
-            throw new Error('Duplicate phase numbers');
+          const phases = JSON.parse(
+            zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8'),
+          );
+
+          if (!Array.isArray(phases) || phases.length !== 17) {
+            throw new Error(`Expected 17 phases, found ${phases?.length ?? 0}`);
           }
 
           phases.forEach((phase, index) => {
-            if (phase.id !== `phase-${index}`) throw new Error(`Unexpected ID ${phase.id}`);
-            if (phase.number !== expected[index]) throw new Error(`Unexpected number ${phase.number}`);
-            if (!phase.title || !phase.summary || !phase.goal || !phase.handoff) {
+            if (phase.id !== `P${index}`) throw new Error(`Unexpected phase id ${phase.id}`);
+            if (phase.number !== index) throw new Error(`Unexpected phase number ${phase.number}`);
+            if (!phase.title || !phase.summary || !phase.category || !phase.risk) {
               throw new Error(`Incomplete metadata for ${phase.id}`);
             }
-            if (!Array.isArray(phase.prompts) || phase.prompts.length === 0) {
-              throw new Error(`No prompts for ${phase.id}`);
+            if (!Array.isArray(phase.outputs) || phase.outputs.length === 0) {
+              throw new Error(`No outputs for ${phase.id}`);
             }
-            phase.prompts.forEach((prompt) => {
-              if (!prompt.label || typeof prompt.body !== 'string' || prompt.body.length < 500) {
-                throw new Error(`Invalid prompt in ${phase.id}`);
-              }
-            });
+            if (!Array.isArray(phase.gates) || phase.gates.length === 0) {
+              throw new Error(`No exit gates for ${phase.id}`);
+            }
+            if (typeof phase.prompt !== 'string' || phase.prompt.length < 900) {
+              throw new Error(`Prompt is too short for ${phase.id}`);
+            }
           });
 
-          if (guide.repository !== 'senpex/pckup-web-app') throw new Error('Unexpected repository');
-          if (guide.figmaFileKey !== 'X7WZQGMUPIuzeaNoA7zTrF') throw new Error('Unexpected Figma file');
-          if (!Array.isArray(guide.reusablePrompts) || guide.reusablePrompts.length < 4) {
-            throw new Error('Reusable control prompts did not load');
-          }
-          guide.reusablePrompts.forEach((prompt) => {
-            if (!prompt.id || !prompt.title || typeof prompt.prompt !== 'string' || prompt.prompt.length < 300) {
-              throw new Error(`Invalid reusable prompt ${prompt.id ?? 'unknown'}`);
+          const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+          const assets = [...html.matchAll(/(?:href|src)="\.\/([^\"]+)"/g)]
+            .map((match) => match[1]);
+          for (const asset of assets) {
+            if (!fs.existsSync(path.join(root, asset))) {
+              throw new Error(`Missing referenced asset ${asset}`);
             }
-          });
+          }
+
+          const publicFiles = [
+            'index.html',
+            'README.md',
+            'site-core.css',
+            'site-components.css',
+            'phase-data-1.js',
+            'phase-data-2.js',
+            'phase-data-3.js',
+            'site.js',
+          ];
+          const publicText = publicFiles
+            .map((file) => fs.readFileSync(path.join(root, file), 'utf8'))
+            .join('\n');
+
+          const banned = [
+            'X7WZQGMUPIuzeaNoA7zTrF',
+            'guide-meta.js',
+            'guide-adapter.js',
+            'phases-00-04.js',
+            'phases-05-08.js',
+            'phases-09-12.js',
+            'app.js',
+          ];
+          for (const value of banned) {
+            if (publicText.includes(value)) {
+              throw new Error(`Banned private or stale value found: ${value}`);
+            }
+          }
 
           console.log(JSON.stringify({
             status: 'valid',
             phases: phases.length,
-            prompts: phases.reduce((total, phase) => total + phase.prompts.length, 0),
-            reusablePrompts: guide.reusablePrompts.length,
-            rules: guide.rules.length,
-            completionCriteria: guide.completion.length,
-            steadyStateSteps: guide.steadyState.length,
+            firstPhase: phases[0].title,
+            lastPhase: phases.at(-1).title,
+            referencedAssets: assets,
           }, null, 2));
           NODE

@@ -1,46 +1,43 @@
 # Pckup Design System Migration Guide
 
-Public interactive guide for migrating the existing production `senpex/pckup-web-app` frontend into a scalable, governed design-system architecture without performing a clean-room rewrite.
+A public, static execution guide for migrating the mature `senpex/pckup-web-app` frontend into a scalable, Figma-connected design system without a big-bang rewrite.
 
-Public URL after this branch is merged into the GitHub Pages branch:
+## Public URL
 
 `https://seanmodd.github.io/pckup-design-system-migration-guide/`
 
-## What the guide contains
+## Guide architecture
 
-- 13 ordered phases from program governance and repository census through CSS ownership, canonical components, shell migration, Figma normalization, Code Connect, enforcement, and steady-state certification.
-- A universal brownfield operating preamble that is automatically prepended to every phase prompt.
-- Exact copy-ready prompts for the main phases and bounded sub-waves.
-- Reusable control prompts for the next bounded migration unit, independent adversarial review, interrupted-session resume, and genuine owner decision forks.
-- Search, collapsible phase navigation, local progress tracking, one-click prompt copying, and a complete Markdown prompt download.
-- Explicit prerequisites, deliverables, exit gates, stop conditions, and handoffs for every phase.
-- Permanent post-migration contribution workflow and final completion criteria.
+- `index.html`: semantic guide shell, migration model, authority matrix, settings dialog, and phase mount points
+- `site-core.css`: layout, navigation, hero, foundations, and shared controls
+- `site-components.css`: phase cards, prompt viewer, tables, dialogs, responsive rules, and final-state workflow
+- `phase-data-1.js`, `phase-data-2.js`, `phase-data-3.js`: compressed 17-phase migration data and exact copy-ready prompts
+- `site.js`: browser bootstrap, prompt rendering, variable substitution, clipboard actions, search, progress persistence, mobile navigation, and prompt-packet export
 
-## Architecture
+## Scope
 
-The site is intentionally static and dependency-free:
+The guide is tailored to a mature production codebase with existing token infrastructure, CI/CD, tests, Figma Variables, a partial component library, global CSS debt, and several parallel product surfaces. It enforces a strangler migration rather than a rewrite.
 
-- `index.html` contains the semantic page shell.
-- `styles.css` contains responsive presentation.
-- `guide-meta.js` contains the repository-aware base prompt, existing-system facts, migration control workflow, and reusable prompts.
-- `guide-adapter.js` initializes the phase registry and exposes the normalized guide metadata consumed by the UI.
-- `phases-00-04.js`, `phases-05-08.js`, and `phases-09-12.js` contain the ordered phase data and exact execution prompts.
-- `app.js` renders the guide and implements search, copy, download, phase expansion, reusable control prompts, active navigation, and local progress.
+The phases cover:
 
-No repository credentials, Figma tokens, customer data, or private environment values are present in the site. The guide names public-safe repository paths and the reviewed Figma file key needed by authorized implementation agents.
+1. Program charter and source-of-truth rules
+2. Production baseline and debt freeze
+3. Machine design census
+4. Visual atlas and state matrix
+5. Equivalence graph and canonical taxonomy
+6. Target code architecture
+7. Isolated component workbench
+8. Governance and adoption metrics
+9. Legacy CSS strangler
+10. Foundations reconciliation
+11. Primitive components
+12. Behavioral components
+13. Reusable product patterns
+14. Application shells
+15. Figma and Code Connect
+16. Product-surface migration waves
+17. Legacy retirement and permanent workflow enforcement
 
-## Validation
+## Privacy
 
-The pull request runs two checks:
-
-- JavaScript and guide-data validation for the complete 13-phase prompt registry.
-- A real Jekyll build using the repository's existing theme and configuration.
-
-## Editing rules
-
-- Keep prompts brownfield-safe and tied to the existing Pckup repository workflow.
-- Do not collapse the migration into one mega-prompt or one pull request.
-- Preserve the 13-phase dependency order.
-- Add new sub-waves to the relevant phase rather than inventing a parallel plan.
-- Keep exact phase prompt text in the phase data files and reusable control prompt text in `guide-meta.js`; the UI and Markdown download are generated from those sources.
-- Test JavaScript syntax and confirm all phase IDs and numbers remain unique before merging.
+The public site stores no credentials, private Figma keys, API tokens, or repository secrets. Prompt settings and completion status are stored only in the visitor's local browser storage. The Figma URL field is intentionally blank and must be supplied locally by an authorized user.
