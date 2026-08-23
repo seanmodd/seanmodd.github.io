@@ -6,7 +6,7 @@
     const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
     const code = await new Response(stream).text();
-    (0, eval)(code);
+    await (0, eval)(code);
   };
   decode().catch((error) => {
     console.error(error);
