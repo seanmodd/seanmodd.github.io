@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#080b12" />
+  <meta name="description" content="Pckup Design System v2 migration command center with phased, copy-ready agent prompts." />
+  <link rel="canonical" href="https://seanmodd.github.io/pckup-design-system-migration-guide/" />
+  <meta property="og:title" content="Pckup Design System Migration Command Center" />
+  <meta property="og:description" content="A controlled, evidence-driven migration from a mature but fragmented UI architecture to a scalable design system and permanent design workflow." />
+  <meta property="og:type" content="website" />
+  <title>Pckup Design System Migration Command Center</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to migration guide</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Migration phases">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <p class="sidebar__eyebrow">PCKUP · DESIGN SYSTEM V2</p>
+          <h1 class="sidebar__title">Migration Command Center</h1>
+        </div>
+      </div>
+
+      <div class="progress-card" aria-labelledby="progress-heading">
+        <div class="progress-card__row">
+          <div>
+            <p class="progress-card__label" id="progress-heading">Program progress</p>
+            <strong class="progress-card__value" id="progressValue">0%</strong>
+          </div>
+          <span class="progress-card__count" id="progressCount">0 / 18</span>
+        </div>
+        <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+        <p class="progress-card__note">Stored only in this browser. Completion never changes repository state.</p>
+      </div>
+
+      <label class="search-box">
+        <span class="sr-only">Search phases and prompts</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.2-4.2m1.2-5.3a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/></svg>
+        <input id="phaseSearch" type="search" placeholder="Search phases…" autocomplete="off" />
+      </label>
+
+      <nav class="phase-nav" id="phaseNav"></nav>
+
+      <div class="sidebar__actions">
+        <button class="button button--secondary button--full" id="downloadAll" type="button">Download all prompts</button>
+        <button class="text-button" id="resetProgress" type="button">Reset local progress</button>
+      </div>
+    </aside>
+
+    <main class="main" id="main">
+      <header class="hero">
+        <div class="hero__grid" aria-hidden="true"></div>
+        <div class="hero__content">
+          <div class="hero__meta">
+            <span class="status-dot"><span></span> Migration blueprint</span>
+            <span id="updatedDate"></span>
+          </div>
+          <p class="hero__kicker">FROM FRAGMENTED UI TO A GOVERNED PRODUCT SYSTEM</p>
+          <h2 id="heroTitle"></h2>
+          <p class="hero__lede" id="heroSubtitle"></p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#phase-00">Start with Phase 00</a>
+            <button class="button button--secondary" type="button" id="copyOperatingContract">Copy operating contract</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="warning-banner" aria-labelledby="warning-title">
+        <div class="warning-banner__icon" aria-hidden="true">!</div>
+        <div>
+          <h2 id="warning-title">This is a migration of a live, heavily governed product—not a redesign sprint.</h2>
+          <p>The sequence deliberately separates discovery, evidence, architecture, mechanical decomposition, canonicalization, Figma reconciliation, adoption, deletion, and governance. Skipping ahead will formalize the current chaos instead of fixing it.</p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="model-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-heading__eyebrow">THE MISSING MIDDLE</p>
+            <h2 id="model-title">Target operating model</h2>
+          </div>
+          <p>Existing tokens are retained. The migration constructs a canonical component layer, then moves each product surface onto it.</p>
+        </div>
+        <div class="architecture-flow" aria-label="Target architecture flow">
+          <div class="architecture-node"><span>01</span><strong>Foundations</strong><small>Tokens · type · motion · icons</small></div>
+          <div class="architecture-arrow" aria-hidden="true">→</div>
+          <div class="architecture-node architecture-node--accent"><span>02</span><strong>Canonical UI</strong><small>Primitives · components · patterns</small></div>
+          <div class="architecture-arrow" aria-hidden="true">→</div>
+          <div class="architecture-node"><span>03</span><strong>Shells & features</strong><small>Product contracts · domain adapters</small></div>
+          <div class="architecture-arrow" aria-hidden="true">→</div>
+          <div class="architecture-node"><span>04</span><strong>Routes</strong><small>Composition · data wiring</small></div>
+        </div>
+        <div class="authority-grid">
+          <article><span>CODE</span><h3>API and behavior</h3><p>TypeScript owns semantics, state, accessibility behavior, and public component contracts.</p></article>
+          <article><span>FIGMA</span><h3>Visual anatomy</h3><p>Figma owns approved appearance, documented states, variant intent, and design usage.</p></article>
+          <article><span>CODE CONNECT</span><h3>The relationship</h3><p>Mappings tell Dev Mode and agents which canonical implementation corresponds to each published design component.</p></article>
+          <article><span>GITHUB MAIN</span><h3>Deployed truth</h3><p>Reviewed code, tests, generated tokens, and production deployment remain the final operational contract.</p></article>
+        </div>
+      </section>
+
+      <section class="section section--compact" aria-labelledby="principles-title">
+        <div class="section-heading">
+          <div><p class="section-heading__eyebrow">NON-NEGOTIABLE</p><h2 id="principles-title">Migration principles</h2></div>
+        </div>
+        <div class="principle-grid" id="principleGrid"></div>
+      </section>
+
+      <section class="section section--compact" aria-labelledby="sequence-title">
+        <div class="section-heading">
+          <div><p class="section-heading__eyebrow">DEPENDENCY-AWARE</p><h2 id="sequence-title">Execution sequence</h2></div>
+          <p>One phase equals one controlled repository task unless the phase explicitly calls for smaller family or surface waves.</p>
+        </div>
+        <div class="sequence" id="sequence"></div>
+      </section>
+
+      <section class="section" aria-labelledby="phases-title">
+        <div class="section-heading section-heading--sticky">
+          <div><p class="section-heading__eyebrow">COPY · EXECUTE · VERIFY</p><h2 id="phases-title">Migration phases and exact prompts</h2></div>
+          <div class="filter-group" role="group" aria-label="Filter phases">
+            <button class="filter is-active" data-filter="all" type="button">All</button>
+            <button class="filter" data-filter="todo" type="button">Not complete</button>
+            <button class="filter" data-filter="complete" type="button">Complete</button>
+          </div>
+        </div>
+        <div class="phase-list" id="phaseList"></div>
+        <p class="empty-results" id="emptyResults" hidden>No phases match the current search and filter.</p>
+      </section>
+
+      <section class="section section--compact" aria-labelledby="metrics-title">
+        <div class="section-heading">
+          <div><p class="section-heading__eyebrow">DEFINITION OF PROGRESS</p><h2 id="metrics-title">Success is measured in adoption and deletion</h2></div>
+          <p>Moving files is not migration. These metrics must improve while route behavior, accessibility, and production reliability stay intact.</p>
+        </div>
+        <ol class="metric-list" id="metricList"></ol>
+      </section>
+
+      <footer class="footer">
+        <div>
+          <strong>Pckup Design System Migration Command Center</strong>
+          <p>Public workflow guide. Repository credentials, private Figma links, and operational secrets are intentionally excluded.</p>
+        </div>
+        <a href="#main">Back to top ↑</a>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./data-common.js"></script>
+  <script src="./data-phases-1.js"></script>
+  <script src="./data-phases-2.js"></script>
+  <script src="./data-phases-3.js"></script>
+  <script src="./data-phases-4.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
