@@ -1,421 +1,247 @@
 (() => {
-  "use strict";
-
-  const guide = window.PCKUP_GUIDE;
-  const phases = Array.isArray(window.PCKUP_PHASES) ? window.PCKUP_PHASES : [];
-  const storageKey = "pckup-design-system-migration-guide:completed:v1";
-
-  const elements = {
-    rules: document.getElementById("rules-grid"),
-    completion: document.getElementById("completion-grid"),
-    steady: document.getElementById("steady-loop"),
-    nav: document.getElementById("phase-nav"),
-    list: document.getElementById("phase-list"),
-    search: document.getElementById("phase-search"),
-    progressLabel: document.getElementById("progress-label"),
-    progressBar: document.getElementById("progress-bar"),
-    progressDetail: document.getElementById("progress-detail"),
-    reset: document.getElementById("reset-progress"),
-    copyPreamble: document.getElementById("copy-preamble"),
-    download: document.getElementById("download-prompts"),
-    toast: document.getElementById("toast")
+  const data = {
+    ...window.PCKUP_GUIDE_META,
+    phases: window.PCKUP_GUIDE_PHASES || [],
+    reusablePrompts: window.PCKUP_GUIDE_META?.reusablePrompts || [],
   };
+  if (!data.basePrompt || data.phases.length === 0) {
+    throw new Error('Pckup migration guide data failed to load');
+  }
+  const storageKey = 'pckup-design-system-migration-progress-v1';
+  const themeKey = 'pckup-design-system-migration-theme-v1';
+  const state = loadProgress();
+  let toastTimer;
 
-  if (!guide || phases.length === 0 || !elements.list) {
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      '<p style="padding:24px;color:#ff8178">The migration guide data failed to load.</p>'
-    );
-    return;
+  const phaseNav = document.getElementById('phase-nav');
+  const phaseList = document.getElementById('phase-list');
+  const reusableList = document.getElementById('reusable-list');
+
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(storageKey)) || {}; }
+    catch { return {}; }
   }
 
-  function readCompleted() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      return new Set(Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : []);
-    } catch {
-      return new Set();
+  function saveProgress() {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    updateProgress();
+  }
+
+  function fullPrompt(phase) {
+    return `${data.basePrompt.trim()}\n\n${phase.prompt.trim()}\n`;
+  }
+
+  function copyText(text, message = 'Copied to clipboard') {
+    const done = () => showToast(message);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
     }
   }
 
-  let completed = readCompleted();
-  let toastTimer = 0;
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function list(items) {
-    if (!Array.isArray(items) || items.length === 0) return "<p>None recorded.</p>";
-    return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-  }
-
-  function fullPrompt(phase, prompt) {
-    return `${guide.universalPreamble.trim()}\n\n${"=".repeat(88)}\nCURRENT EXECUTION\nPhase ${phase.number}: ${phase.title}\nPrompt: ${prompt.label}\n${"=".repeat(88)}\n\n${prompt.body.trim()}\n`;
-  }
-
-  async function copyText(text, successMessage) {
-    try {
-      await navigator.clipboard.writeText(text);
-      showToast(successMessage);
-      return;
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      const copied = document.execCommand("copy");
-      textarea.remove();
-      showToast(copied ? successMessage : "Copy failed. Select the prompt manually.");
-    }
+  function fallbackCopy(text, done) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+    done();
   }
 
   function showToast(message) {
-    if (!elements.toast) return;
-    window.clearTimeout(toastTimer);
-    elements.toast.textContent = message;
-    elements.toast.classList.add("is-visible");
-    toastTimer = window.setTimeout(() => elements.toast.classList.remove("is-visible"), 2300);
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2200);
   }
 
-  function renderStaticSections() {
-    elements.rules.innerHTML = guide.rules
-      .map(
-        (rule, index) => `
-          <article class="rule-card">
-            <span class="rule-card__icon" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
-            <h3>${escapeHtml(rule.title)}</h3>
-            <p>${escapeHtml(rule.body)}</p>
-          </article>`
-      )
-      .join("");
-
-    elements.completion.innerHTML = guide.completion
-      .map(
-        (item) => `
-          <article class="completion-card">
-            <span class="completion-card__metric">${escapeHtml(item.metric)}</span>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p>${escapeHtml(item.body)}</p>
-          </article>`
-      )
-      .join("");
-
-    elements.steady.innerHTML = guide.steadyState
-      .map((item) => `<li><span>${escapeHtml(item)}</span></li>`)
-      .join("");
+  function renderFacts() {
+    document.getElementById('facts').innerHTML = data.facts.map(item => `
+      <div class="fact"><strong>${escapeHtml(item.value)}</strong><span>${escapeHtml(item.label)}</span></div>
+    `).join('');
   }
 
-  function renderNavigation() {
-    elements.nav.innerHTML = phases
-      .map(
-        (phase) => `
-          <a href="#${escapeHtml(phase.id)}" data-phase-link="${escapeHtml(phase.id)}">
-            <span class="phase-nav__number">${escapeHtml(phase.number)}</span>
-            <span>${escapeHtml(phase.title)}</span>
-            <span class="phase-nav__status" aria-hidden="true"></span>
-          </a>`
-      )
-      .join("");
+  function renderWorkflow() {
+    document.getElementById('workflow').innerHTML = data.workflow.map((item, index) => `
+      <article class="workflow-card"><span>0${index + 1}</span><strong>${escapeHtml(item.label)}</strong><p>${escapeHtml(item.detail)}</p></article>
+    `).join('');
   }
 
-  function promptHtml(phase, prompt, promptIndex) {
-    const promptId = `${phase.id}-prompt-${promptIndex}`;
-    return `
-      <section class="prompt-block" data-prompt-block>
-        <div class="prompt-toolbar">
-          <span>${escapeHtml(prompt.label)}</span>
-          <div class="prompt-toolbar__actions">
-            <button class="copy-button" type="button" data-expand-prompt="${promptId}" aria-expanded="false">Expand</button>
-            <button class="copy-button" type="button" data-copy-prompt="${phase.id}:${promptIndex}">Copy full prompt</button>
-          </div>
-        </div>
-        <pre class="prompt-content is-collapsed" id="${promptId}"></pre>
-      </section>`;
+  function renderPrinciples() {
+    document.getElementById('principles').innerHTML = data.principles.map(item => `<div class="principle">${escapeHtml(item)}</div>`).join('');
   }
 
   function renderPhases() {
-    elements.list.innerHTML = phases
-      .map((phase, phaseIndex) => {
-        const next = phases[phaseIndex + 1];
-        const prompts = Array.isArray(phase.prompts) ? phase.prompts : [];
-        return `
-          <article class="phase-card" id="${escapeHtml(phase.id)}" data-phase-card="${escapeHtml(phase.id)}">
-            <button class="phase-summary" type="button" aria-expanded="false" aria-controls="${phase.id}-body">
-              <span class="phase-number">${escapeHtml(phase.number)}</span>
-              <span class="phase-heading">
-                <span class="phase-heading__meta">
-                  <span class="phase-stage">${escapeHtml(phase.category)}</span>
-                  <span class="phase-dependency">${escapeHtml(phase.mode)} · ${escapeHtml(phase.duration)}</span>
-                </span>
-                <h3>${escapeHtml(phase.title)}</h3>
-                <p>${escapeHtml(phase.summary)}</p>
-              </span>
-              <span class="phase-chevron" aria-hidden="true">⌄</span>
-            </button>
+    phaseNav.innerHTML = data.phases.map(phase => `
+      <a href="#${phase.id}" data-nav-phase="${phase.id}" class="${state[phase.id] ? 'is-complete' : ''}">
+        <span class="nav-number">${phase.number}</span>
+        <span class="nav-title">${escapeHtml(phase.title)}</span>
+        <span class="nav-check" aria-hidden="true"></span>
+      </a>
+    `).join('');
 
-            <div class="phase-body" id="${phase.id}-body">
-              <div class="phase-grid">
-                <section class="phase-panel">
-                  <h4>Goal</h4>
-                  <p>${escapeHtml(phase.goal)}</p>
-                </section>
-                <section class="phase-panel">
-                  <h4>Why this phase exists</h4>
-                  <p>${escapeHtml(phase.why)}</p>
-                </section>
-                <section class="phase-panel">
-                  <h4>Prerequisites</h4>
-                  ${list(phase.prerequisites)}
-                </section>
-                <section class="phase-panel">
-                  <h4>Work in scope</h4>
-                  ${list(phase.tasks)}
-                </section>
-                <section class="phase-panel">
-                  <h4>Required deliverables</h4>
-                  ${list(phase.deliverables)}
-                </section>
-                <section class="phase-panel">
-                  <h4>Stop conditions</h4>
-                  ${list(phase.stopConditions)}
-                </section>
-              </div>
-
-              <section class="phase-gate">
-                <strong>Exit gate</strong>
-                ${list(phase.exitGate)}
-              </section>
-
-              ${prompts.map((prompt, index) => promptHtml(phase, prompt, index)).join("")}
-
-              <div class="phase-complete-row">
-                <button class="complete-button" type="button" data-complete-phase="${escapeHtml(phase.id)}">Mark phase complete</button>
-                ${next ? `<a class="phase-next-link" href="#${escapeHtml(next.id)}" data-next-phase="${escapeHtml(next.id)}">Next: Phase ${escapeHtml(next.number)} →</a>` : `<span class="phase-next-link">Migration program complete ✓</span>`}
-              </div>
+    phaseList.innerHTML = data.phases.map((phase, index) => {
+      const prompt = fullPrompt(phase);
+      return `
+        <article class="phase-card ${index === 0 ? 'is-open' : ''} ${state[phase.id] ? 'is-complete' : ''}" id="${phase.id}" data-phase-card="${phase.id}">
+          <div class="phase-summary" role="button" tabindex="0" aria-expanded="${index === 0 ? 'true' : 'false'}" data-toggle-phase="${phase.id}">
+            <div class="phase-number">${phase.number}</div>
+            <div class="phase-heading"><span class="phase-stage">${escapeHtml(phase.stage)}</span><h3>${escapeHtml(phase.title)}</h3><p>${escapeHtml(phase.summary)}</p></div>
+            <div class="phase-meta"><span class="meta-pill">Depends: ${escapeHtml(phase.dependsOn)}</span><span class="meta-pill">${escapeHtml(phase.duration)}</span></div>
+          </div>
+          <div class="phase-content">
+            <div class="phase-grid">
+              <div class="info-panel"><h4>Required outputs</h4><ul>${phase.outputs.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></div>
+              <div class="info-panel"><h4>Why this phase exists</h4><p style="margin:0;color:var(--text-soft);font-size:12px">${escapeHtml(phase.summary)}</p></div>
+              <div class="info-panel gate-panel"><p>${escapeHtml(phase.gate)}</p></div>
             </div>
-          </article>`;
-      })
-      .join("");
-
-    phases.forEach((phase) => {
-      phase.prompts.forEach((prompt, index) => {
-        const pre = document.getElementById(`${phase.id}-prompt-${index}`);
-        if (pre) pre.textContent = fullPrompt(phase, prompt);
-      });
-    });
+            <div class="prompt-shell">
+              <div class="prompt-toolbar"><span>Complete self-contained prompt</span><button class="copy-button" type="button" data-copy-phase="${phase.id}">Copy prompt</button></div>
+              <pre class="prompt-text">${escapeHtml(prompt)}</pre>
+            </div>
+            <div class="phase-actions">
+              <button class="complete-button" type="button" data-complete-phase="${phase.id}">${state[phase.id] ? '✓ Phase complete' : 'Mark phase complete'}</button>
+              <span class="open-next">Only continue when the exit gate is objectively true.</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 
-  function persistCompleted() {
-    localStorage.setItem(storageKey, JSON.stringify([...completed].sort()));
+  function renderReusable() {
+    reusableList.innerHTML = data.reusablePrompts.map(item => `
+      <article class="reusable-card"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p><details><summary>View prompt</summary><pre>${escapeHtml(item.prompt)}</pre></details><div class="reusable-actions"><button class="copy-button" type="button" data-copy-reusable="${item.id}">Copy prompt</button></div></article>
+    `).join('');
   }
 
   function updateProgress() {
-    const valid = phases.filter((phase) => completed.has(phase.id)).length;
-    const percent = phases.length === 0 ? 0 : Math.round((valid / phases.length) * 100);
-    elements.progressLabel.textContent = `${percent}%`;
-    elements.progressBar.style.width = `${percent}%`;
-    elements.progressDetail.textContent = `${valid} of ${phases.length} phases marked complete`;
-
-    phases.forEach((phase) => {
-      const isComplete = completed.has(phase.id);
+    const complete = data.phases.filter(phase => state[phase.id]).length;
+    const percent = Math.round((complete / data.phases.length) * 100);
+    document.getElementById('progress-label').textContent = `${percent}%`;
+    document.getElementById('progress-bar').style.width = `${percent}%`;
+    document.getElementById('progress-detail').textContent = `${complete} of ${data.phases.length} phases marked complete`;
+    data.phases.forEach(phase => {
       const card = document.querySelector(`[data-phase-card="${phase.id}"]`);
-      const link = document.querySelector(`[data-phase-link="${phase.id}"]`);
+      const nav = document.querySelector(`[data-nav-phase="${phase.id}"]`);
       const button = document.querySelector(`[data-complete-phase="${phase.id}"]`);
-      card?.classList.toggle("is-complete", isComplete);
-      link?.classList.toggle("is-complete", isComplete);
-      if (button) button.textContent = isComplete ? "Completed ✓" : "Mark phase complete";
+      card?.classList.toggle('is-complete', Boolean(state[phase.id]));
+      nav?.classList.toggle('is-complete', Boolean(state[phase.id]));
+      if (button) button.textContent = state[phase.id] ? '✓ Phase complete' : 'Mark phase complete';
     });
   }
 
-  function setOpen(card, open) {
-    if (!card) return;
-    card.classList.toggle("is-open", open);
-    const summary = card.querySelector(".phase-summary");
-    summary?.setAttribute("aria-expanded", String(open));
-  }
-
-  function openPhase(id, options = {}) {
+  function togglePhase(id) {
     const card = document.querySelector(`[data-phase-card="${id}"]`);
     if (!card) return;
-    if (options.closeOthers !== false) {
-      document.querySelectorAll("[data-phase-card]").forEach((other) => {
-        if (other !== card) setOpen(other, false);
-      });
-    }
-    setOpen(card, true);
-    if (options.scroll !== false) {
-      card.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    const open = card.classList.toggle('is-open');
+    card.querySelector('[data-toggle-phase]')?.setAttribute('aria-expanded', String(open));
   }
 
-  function applySearch(query) {
-    const normalized = query.trim().toLowerCase();
-    let visible = 0;
-    phases.forEach((phase) => {
-      const card = document.querySelector(`[data-phase-card="${phase.id}"]`);
-      const searchable = JSON.stringify(phase).toLowerCase();
-      const show = normalized.length === 0 || searchable.includes(normalized);
-      if (card) card.hidden = !show;
-      if (show) visible += 1;
-    });
-
-    let empty = elements.list.querySelector(".no-results");
-    if (visible === 0) {
-      if (!empty) {
-        empty = document.createElement("div");
-        empty.className = "no-results";
-        empty.textContent = "No migration phases match that search.";
-        elements.list.appendChild(empty);
-      }
-    } else {
-      empty?.remove();
-    }
+  function exportProgress() {
+    const completed = data.phases.filter(phase => state[phase.id]).map(phase => `${phase.number} ${phase.title}`);
+    const next = data.phases.find(phase => !state[phase.id]);
+    const text = [
+      'Pckup Design System Migration Progress',
+      `Completed: ${completed.length}/${data.phases.length}`,
+      '',
+      completed.length ? completed.map(item => `- ${item}`).join('\n') : '- None marked complete',
+      '',
+      `Next phase: ${next ? `${next.number} ${next.title}` : 'Program complete'}`,
+      `Exported: ${new Date().toISOString()}`,
+    ].join('\n');
+    copyText(text, 'Progress copied');
   }
 
-  function downloadAllPrompts() {
-    const sections = [
-      guide.title,
-      `Repository: ${guide.repository}`,
-      "",
-      "UNIVERSAL OPERATING PREAMBLE",
-      "=".repeat(88),
-      guide.universalPreamble.trim(),
-      ""
-    ];
-
-    phases.forEach((phase) => {
-      phase.prompts.forEach((prompt) => {
-        sections.push("", "#".repeat(88), `PHASE ${phase.number}: ${phase.title}`, `PROMPT: ${prompt.label}`, "#".repeat(88), "", fullPrompt(phase, prompt));
-      });
-    });
-
-    const blob = new Blob([sections.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "pckup-design-system-v2-migration-prompts.txt";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-    showToast("Downloaded all migration prompts.");
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   }
 
-  function bindEvents() {
-    elements.list.addEventListener("click", (event) => {
-      const summary = event.target.closest(".phase-summary");
-      if (summary) {
-        const card = summary.closest("[data-phase-card]");
-        setOpen(card, !card.classList.contains("is-open"));
-        return;
-      }
-
-      const copy = event.target.closest("[data-copy-prompt]");
-      if (copy) {
-        const [phaseId, rawIndex] = copy.dataset.copyPrompt.split(":");
-        const phase = phases.find((item) => item.id === phaseId);
-        const prompt = phase?.prompts?.[Number(rawIndex)];
-        if (phase && prompt) void copyText(fullPrompt(phase, prompt), `Copied Phase ${phase.number}: ${prompt.label}`);
-        return;
-      }
-
-      const expand = event.target.closest("[data-expand-prompt]");
-      if (expand) {
-        const pre = document.getElementById(expand.dataset.expandPrompt);
-        if (!pre) return;
-        const collapsed = pre.classList.toggle("is-collapsed");
-        expand.textContent = collapsed ? "Expand" : "Collapse";
-        expand.setAttribute("aria-expanded", String(!collapsed));
-        return;
-      }
-
-      const complete = event.target.closest("[data-complete-phase]");
-      if (complete) {
-        const id = complete.dataset.completePhase;
-        if (completed.has(id)) completed.delete(id);
-        else completed.add(id);
-        persistCompleted();
-        updateProgress();
-        showToast(completed.has(id) ? "Phase marked complete." : "Phase marked incomplete.");
-        return;
-      }
-
-      const next = event.target.closest("[data-next-phase]");
-      if (next) {
-        event.preventDefault();
-        const id = next.dataset.nextPhase;
-        history.pushState(null, "", `#${id}`);
-        openPhase(id);
-      }
-    });
-
-    elements.nav.addEventListener("click", (event) => {
-      const link = event.target.closest("[data-phase-link]");
-      if (!link) return;
-      event.preventDefault();
-      const id = link.dataset.phaseLink;
-      history.pushState(null, "", `#${id}`);
-      openPhase(id);
-    });
-
-    elements.search.addEventListener("input", () => applySearch(elements.search.value));
-
-    elements.reset.addEventListener("click", () => {
-      const confirmed = window.confirm("Reset the locally saved phase progress for this guide?");
-      if (!confirmed) return;
-      completed = new Set();
-      persistCompleted();
-      updateProgress();
-      showToast("Local progress reset.");
-    });
-
-    elements.copyPreamble.addEventListener("click", () => {
-      void copyText(guide.universalPreamble.trim(), "Copied the universal operating preamble.");
-    });
-
-    elements.download.addEventListener("click", downloadAllPrompts);
-
-    window.addEventListener("popstate", () => {
-      const id = location.hash.slice(1);
-      if (phases.some((phase) => phase.id === id)) openPhase(id);
-    });
+  function initTheme() {
+    const saved = localStorage.getItem(themeKey);
+    const theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = theme;
   }
 
-  function observeActivePhase() {
-    if (!("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        document.querySelectorAll("[data-phase-link]").forEach((link) => {
-          link.classList.toggle("is-active", link.dataset.phaseLink === visible.target.id);
-        });
-      },
-      { rootMargin: "-18% 0px -65% 0px", threshold: [0, 0.1, 0.25] }
-    );
-    document.querySelectorAll("[data-phase-card]").forEach((card) => observer.observe(card));
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem(themeKey, next);
   }
 
-  renderStaticSections();
-  renderNavigation();
+  renderFacts();
+  renderWorkflow();
+  renderPrinciples();
   renderPhases();
-  bindEvents();
+  renderReusable();
+  initTheme();
   updateProgress();
-  observeActivePhase();
 
-  const initialId = phases.some((phase) => `#${phase.id}` === location.hash)
-    ? location.hash.slice(1)
-    : phases[0].id;
-  openPhase(initialId, { scroll: location.hash.length > 1, closeOthers: true });
+  document.addEventListener('click', event => {
+    const toggle = event.target.closest('[data-toggle-phase]');
+    if (toggle) togglePhase(toggle.dataset.togglePhase);
+
+    const phaseCopy = event.target.closest('[data-copy-phase]');
+    if (phaseCopy) {
+      const phase = data.phases.find(item => item.id === phaseCopy.dataset.copyPhase);
+      if (phase) copyText(fullPrompt(phase), `Phase ${phase.number} prompt copied`);
+    }
+
+    const reusableCopy = event.target.closest('[data-copy-reusable]');
+    if (reusableCopy) {
+      const item = data.reusablePrompts.find(prompt => prompt.id === reusableCopy.dataset.copyReusable);
+      if (item) copyText(item.prompt.trim() + '\n', `${item.title} copied`);
+    }
+
+    const complete = event.target.closest('[data-complete-phase]');
+    if (complete) {
+      const id = complete.dataset.completePhase;
+      state[id] = !state[id];
+      saveProgress();
+      showToast(state[id] ? 'Phase marked complete' : 'Phase reopened');
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    const toggle = event.target.closest?.('[data-toggle-phase]');
+    if (toggle && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      togglePhase(toggle.dataset.togglePhase);
+    }
+  });
+
+  document.getElementById('copy-master').addEventListener('click', () => copyText(data.basePrompt.trim() + '\n', 'Master context copied'));
+  document.getElementById('copy-all').addEventListener('click', () => {
+    const all = data.phases.map(phase => `===== PHASE ${phase.number}: ${phase.title.toUpperCase()} =====\n\n${fullPrompt(phase)}`).join('\n\n');
+    copyText(all, 'All phase prompts copied');
+  });
+  document.getElementById('export-progress').addEventListener('click', exportProgress);
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('reset-progress').addEventListener('click', () => {
+    if (!confirm('Reset all locally saved phase progress?')) return;
+    Object.keys(state).forEach(key => delete state[key]);
+    saveProgress();
+    showToast('Progress reset');
+  });
+
+  document.getElementById('phase-search').addEventListener('input', event => {
+    const query = event.target.value.trim().toLowerCase();
+    data.phases.forEach(phase => {
+      const match = !query || `${phase.number} ${phase.stage} ${phase.title} ${phase.summary}`.toLowerCase().includes(query);
+      document.querySelector(`[data-nav-phase="${phase.id}"]`).style.display = match ? '' : 'none';
+    });
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (!visible) return;
+    document.querySelectorAll('[data-nav-phase]').forEach(item => item.classList.remove('is-active'));
+    document.querySelector(`[data-nav-phase="${visible.target.id}"]`)?.classList.add('is-active');
+  }, { rootMargin: '-20% 0px -65% 0px', threshold: [0.05, 0.2, 0.5] });
+  document.querySelectorAll('[data-phase-card]').forEach(card => observer.observe(card));
 })();
