@@ -54,6 +54,7 @@
 
         <div class="sidebar__footer">
           <a href="#operating-model">Operating model</a>
+          <a href="#reusable-prompts">Control prompts</a>
           <a href="#completion">Completion criteria</a>
           <a href="#steady-state">Future workflow</a>
         </div>
@@ -187,6 +188,15 @@
         <div class="phase-list" id="phase-list"></div>
       </section>
 
+      <section class="section" id="reusable-prompts" aria-labelledby="reusable-prompts-title">
+        <div class="section-heading">
+          <p class="eyebrow">Between phases and review gates</p>
+          <h2 id="reusable-prompts-title">Reusable control prompts</h2>
+          <p>Use these to run the next bounded migration unit, resume after an interrupted agent session, perform an independent adversarial review, or present a genuine owner decision fork without losing the program's operating contract.</p>
+        </div>
+        <div class="prompt-stack" id="reusable-prompt-list"></div>
+      </section>
+
       <section class="section" id="completion" aria-labelledby="completion-title">
         <div class="section-heading">
           <p class="eyebrow">Definition of done</p>
@@ -219,6 +229,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="./guide-meta.js"></script>
+  <script src="./guide-adapter.js"></script>
   <script src="./phases-00-04.js"></script>
   <script src="./phases-05-08.js"></script>
   <script src="./phases-09-12.js"></script>
