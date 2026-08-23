@@ -1,0 +1,33 @@
+name: Validate Jekyll site
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build public site
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_PATH: ${{ runner.temp }}/pckup-jekyll-bundle
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+      - name: Install dependencies
+        run: bundle install --jobs 4 --retry 3
+      - name: Build site
+        run: bundle exec jekyll build --future
+      - name: Verify migration guide output
+        run: |
+          test -f _site/pckup-design-system-migration-guide/index.html
+          test -f _site/pckup-design-system-migration-guide/styles.css
+          test -f _site/pckup-design-system-migration-guide/app.js
+          test -f _site/pckup-design-system-migration-guide/guide-adapter.js
+          grep -F "Turn Pckup's existing interface into a real, scalable design system." _site/pckup-design-system-migration-guide/index.html
