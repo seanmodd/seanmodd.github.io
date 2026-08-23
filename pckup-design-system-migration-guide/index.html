@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0b0d" />
+  <meta name="description" content="A phased, brownfield migration playbook for turning the existing Pckup web application into a scalable, Figma-connected design system without rewriting the product." />
+  <title>Pckup Design System Migration Guide</title>
+  <link rel="canonical" href="https://seanmodd.github.io/pckup-design-system-migration-guide/" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to the guide</a>
+
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="#top" aria-label="Pckup migration guide home">
+        <span class="brand__mark" aria-hidden="true">P</span>
+        <span class="brand__copy">
+          <strong>Pckup</strong>
+          <small>Design system migration</small>
+        </span>
+      </a>
+      <div class="site-header__actions">
+        <button class="button button--ghost" id="download-prompts" type="button">Download all prompts</button>
+        <button class="button button--primary" id="copy-preamble" type="button">Copy universal preamble</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-shell" id="top">
+    <aside class="sidebar" aria-label="Guide navigation">
+      <div class="sidebar__sticky">
+        <div class="sidebar__intro">
+          <p class="eyebrow">Brownfield, not a rewrite</p>
+          <h2>Migration control panel</h2>
+          <p>Run each phase in order. Use one task, worktree, branch, pull request, review cycle, and merge per phase or migration wave.</p>
+        </div>
+
+        <div class="progress-card" aria-labelledby="progress-title">
+          <div class="progress-card__header">
+            <span id="progress-title">Program progress</span>
+            <strong id="progress-label">0%</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          <p id="progress-detail">0 of 13 phases marked complete</p>
+          <button class="text-button" id="reset-progress" type="button">Reset local progress</button>
+        </div>
+
+        <nav class="phase-nav" id="phase-nav" aria-label="Migration phases"></nav>
+
+        <div class="sidebar__footer">
+          <a href="#operating-model">Operating model</a>
+          <a href="#reusable-prompts">Control prompts</a>
+          <a href="#completion">Completion criteria</a>
+          <a href="#steady-state">Future workflow</a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main" id="main-content">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__content">
+          <div class="hero__badges">
+            <span class="pill pill--accent">13 ordered phases</span>
+            <span class="pill">Production-safe migration</span>
+            <span class="pill">Figma Enterprise + Code Connect</span>
+          </div>
+          <p class="eyebrow">The missing middle between tokens and product UI</p>
+          <h1 id="hero-title">Turn Pckup's existing interface into a real, scalable design system.</h1>
+          <p class="hero__lede">This guide assumes the codebase is already large, valuable, tested, and in production. It does not propose a clean-room rebuild. It creates a controlled migration from scattered React components and global CSS into canonical code components, a reconciled Figma library, reliable Code Connect mappings, and enforceable future rules.</p>
+          <div class="hero__actions">
+            <a class="button button--primary" href="#phase-0">Start with Phase 0</a>
+            <a class="button button--ghost" href="#migration-map">See the migration map</a>
+          </div>
+        </div>
+
+        <div class="hero__diagnosis" aria-label="Current and target architecture">
+          <div class="diagnosis-card diagnosis-card--current">
+            <span>Current reality</span>
+            <strong>Good tokens. Fragmented components.</strong>
+            <ul>
+              <li>Massive global CSS ownership</li>
+              <li>Route-local component inventions</li>
+              <li>Parallel product shells</li>
+              <li>Partial Figma and Code Connect coverage</li>
+            </ul>
+          </div>
+          <div class="diagnosis-arrow" aria-hidden="true">↓</div>
+          <div class="diagnosis-card diagnosis-card--target">
+            <span>Target paradigm</span>
+            <strong>One governed component contract.</strong>
+            <ul>
+              <li>Canonical React APIs</li>
+              <li>Owned, colocated styles</li>
+              <li>Layered Figma libraries</li>
+              <li>Measured adoption and blocking CI</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="operating-model" aria-labelledby="operating-title">
+        <div class="section-heading">
+          <p class="eyebrow">How to use this guide</p>
+          <h2 id="operating-title">A migration program, not one mega-prompt</h2>
+          <p>Each phase creates artifacts that become the verified input to the next phase. Structural phases preserve pixels. Visual redesign decisions happen only after the component contract is stable.</p>
+        </div>
+
+        <div class="operating-grid">
+          <article class="info-card">
+            <span class="info-card__number">01</span>
+            <h3>Run in order</h3>
+            <p>Do not jump straight to Figma generation or component rewriting. Inventory and classification prevent the current chaos from being copied into a new folder.</p>
+          </article>
+          <article class="info-card">
+            <span class="info-card__number">02</span>
+            <h3>Fresh agent session</h3>
+            <p>Use a fresh coding-agent session for each phase or named wave. Paste the complete prompt from this site from the repository root.</p>
+          </article>
+          <article class="info-card">
+            <span class="info-card__number">03</span>
+            <h3>One PR boundary</h3>
+            <p>Every phase is independently reviewable and reversible. Repeatable waves are intentionally split so a failed migration never blocks the entire program.</p>
+          </article>
+          <article class="info-card">
+            <span class="info-card__number">04</span>
+            <h3>Prove, then delete</h3>
+            <p>Legacy components and selectors stay behind compatibility adapters until all consumers are migrated and automated usage counts reach zero.</p>
+          </article>
+        </div>
+
+        <div class="callout callout--warning">
+          <div>
+            <strong>Non-negotiable program rule</strong>
+            <p>Do not ask an agent to “clean up the design system” across the whole repository. That wording invites a rewrite, silent visual drift, and new abstractions that ignore years of product behavior.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="migration-map" aria-labelledby="map-title">
+        <div class="section-heading">
+          <p class="eyebrow">Dependency chain</p>
+          <h2 id="map-title">The migration map</h2>
+          <p>The arrows are contractual. A later phase cannot be considered complete if the upstream artifact it depends on is missing or unapproved.</p>
+        </div>
+
+        <div class="migration-map" role="img" aria-label="Current code and Figma move through census, taxonomy, architecture, migration waves, Code Connect, enforcement, and steady state">
+          <div class="map-node map-node--danger"><span>Current production</span><strong>Scattered code + global CSS</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node"><span>Evidence</span><strong>Census + screenshots</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node"><span>Decisions</span><strong>Equivalence graph + taxonomy</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node"><span>Structure</span><strong>Target architecture + CSS ownership</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node map-node--accent"><span>Migration</span><strong>Primitives → patterns → shells</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node"><span>Contract</span><strong>Figma + Code Connect</strong></div>
+          <div class="map-arrow">→</div>
+          <div class="map-node map-node--success"><span>Steady state</span><strong>Blocking CI + governed workflow</strong></div>
+        </div>
+      </section>
+
+      <section class="section section--compact" aria-labelledby="rules-title">
+        <div class="section-heading">
+          <p class="eyebrow">Universal constraints</p>
+          <h2 id="rules-title">Rules every phase inherits</h2>
+        </div>
+        <div class="rules-grid" id="rules-grid"></div>
+      </section>
+
+      <section class="section phases-section" aria-labelledby="phases-title">
+        <div class="section-heading section-heading--with-tools">
+          <div>
+            <p class="eyebrow">Copy-and-paste execution plan</p>
+            <h2 id="phases-title">Migration phases</h2>
+            <p>Every prompt below is self-contained when copied. The site automatically prepends the universal operating preamble.</p>
+          </div>
+          <label class="search-control">
+            <span class="sr-only">Search phases</span>
+            <input id="phase-search" type="search" placeholder="Search phases, outputs, or prompts" autocomplete="off" />
+          </label>
+        </div>
+        <div class="phase-list" id="phase-list"></div>
+      </section>
+
+      <section class="section" id="reusable-prompts" aria-labelledby="reusable-prompts-title">
+        <div class="section-heading">
+          <p class="eyebrow">Between phases and review gates</p>
+          <h2 id="reusable-prompts-title">Reusable control prompts</h2>
+          <p>Use these to run the next bounded migration unit, resume after an interrupted agent session, perform an independent adversarial review, or present a genuine owner decision fork without losing the program's operating contract.</p>
+        </div>
+        <div class="prompt-stack" id="reusable-prompt-list"></div>
+      </section>
+
+      <section class="section" id="completion" aria-labelledby="completion-title">
+        <div class="section-heading">
+          <p class="eyebrow">Definition of done</p>
+          <h2 id="completion-title">The migration is complete only when the old path is unnecessary</h2>
+        </div>
+        <div class="completion-grid" id="completion-grid"></div>
+      </section>
+
+      <section class="section" id="steady-state" aria-labelledby="steady-title">
+        <div class="steady-state">
+          <div class="steady-state__copy">
+            <p class="eyebrow">The workflow after migration</p>
+            <h2 id="steady-title">Every future component follows one governed loop</h2>
+            <p>Once the migration is complete, neither Figma nor GitHub operates as an isolated authority. Product intent, component API, implementation, documentation, and release evidence move together.</p>
+          </div>
+          <ol class="steady-loop" id="steady-loop"></ol>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div>
+          <strong>Pckup Design System Migration Guide</strong>
+          <p>Built for the existing <code>senpex/pckup-web-app</code> production codebase.</p>
+        </div>
+        <a href="#top">Back to top ↑</a>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./guide-meta.js"></script>
+  <script src="./guide-adapter.js"></script>
+  <script src="./phases-00-04.js"></script>
+  <script src="./phases-05-08.js"></script>
+  <script src="./phases-09-12.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
