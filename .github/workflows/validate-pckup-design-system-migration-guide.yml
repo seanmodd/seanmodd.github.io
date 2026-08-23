@@ -1,0 +1,84 @@
+name: Validate Pckup design-system migration guide
+
+on:
+  pull_request:
+    paths:
+      - "pckup-design-system-migration-guide/**"
+      - ".github/workflows/validate-pckup-design-system-migration-guide.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "pckup-design-system-migration-guide/**"
+      - ".github/workflows/validate-pckup-design-system-migration-guide.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check JavaScript syntax
+        run: |
+          node --check pckup-design-system-migration-guide/guide-meta.js
+          node --check pckup-design-system-migration-guide/phases-00-04.js
+          node --check pckup-design-system-migration-guide/phases-05-08.js
+          node --check pckup-design-system-migration-guide/phases-09-12.js
+          node --check pckup-design-system-migration-guide/app.js
+      - name: Validate guide data
+        run: |
+          node <<'NODE'
+          global.window = {};
+          require('./pckup-design-system-migration-guide/guide-meta.js');
+          require('./pckup-design-system-migration-guide/phases-00-04.js');
+          require('./pckup-design-system-migration-guide/phases-05-08.js');
+          require('./pckup-design-system-migration-guide/phases-09-12.js');
+
+          const guide = global.window.PCKUP_GUIDE;
+          const phases = global.window.PCKUP_PHASES;
+          const expected = Array.from({ length: 13 }, (_, index) => String(index).padStart(2, '0'));
+
+          if (!guide) throw new Error('Guide metadata did not load');
+          if (!Array.isArray(phases) || phases.length !== 13) {
+            throw new Error(`Expected 13 phases, found ${phases?.length ?? 0}`);
+          }
+          if (new Set(phases.map((phase) => phase.id)).size !== phases.length) {
+            throw new Error('Duplicate phase IDs');
+          }
+          if (new Set(phases.map((phase) => phase.number)).size !== phases.length) {
+            throw new Error('Duplicate phase numbers');
+          }
+
+          phases.forEach((phase, index) => {
+            if (phase.id !== `phase-${index}`) throw new Error(`Unexpected ID ${phase.id}`);
+            if (phase.number !== expected[index]) throw new Error(`Unexpected number ${phase.number}`);
+            if (!phase.title || !phase.summary || !phase.goal || !phase.handoff) {
+              throw new Error(`Incomplete metadata for ${phase.id}`);
+            }
+            if (!Array.isArray(phase.prompts) || phase.prompts.length === 0) {
+              throw new Error(`No prompts for ${phase.id}`);
+            }
+            phase.prompts.forEach((prompt) => {
+              if (!prompt.label || typeof prompt.body !== 'string' || prompt.body.length < 500) {
+                throw new Error(`Invalid prompt in ${phase.id}`);
+              }
+            });
+          });
+
+          if (guide.repository !== 'senpex/pckup-web-app') throw new Error('Unexpected repository');
+          if (guide.figmaFileKey !== 'X7WZQGMUPIuzeaNoA7zTrF') throw new Error('Unexpected Figma file');
+
+          console.log(JSON.stringify({
+            status: 'valid',
+            phases: phases.length,
+            prompts: phases.reduce((total, phase) => total + phase.prompts.length, 0),
+            rules: guide.rules.length,
+            completionCriteria: guide.completion.length,
+            steadyStateSteps: guide.steadyState.length,
+          }, null, 2));
+          NODE
