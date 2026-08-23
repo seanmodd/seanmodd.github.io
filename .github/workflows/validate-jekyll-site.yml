@@ -24,10 +24,16 @@ jobs:
         run: bundle install --jobs 4 --retry 3
       - name: Build site
         run: bundle exec jekyll build --future
-      - name: Verify migration guide output
+      - name: Verify finalized migration guide output
         run: |
-          test -f _site/pckup-design-system-migration-guide/index.html
-          test -f _site/pckup-design-system-migration-guide/styles.css
-          test -f _site/pckup-design-system-migration-guide/app.js
-          test -f _site/pckup-design-system-migration-guide/guide-adapter.js
-          grep -F "Turn Pckup's existing interface into a real, scalable design system." _site/pckup-design-system-migration-guide/index.html
+          guide="_site/pckup-design-system-migration-guide"
+          test -f "$guide/index.html"
+          test -f "$guide/site-core.css"
+          test -f "$guide/site-components.css"
+          test -f "$guide/phase-data-1.js"
+          test -f "$guide/phase-data-2.js"
+          test -f "$guide/phase-data-3.js"
+          test -f "$guide/site.js"
+          grep -F "Migrate the existing codebase into a real, scalable design system." "$guide/index.html"
+          grep -F "0 of 17 phases complete" "$guide/index.html"
+          grep -F "phase-data-3.js" "$guide/index.html"
